@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "The antonym of the word 'impediment' is:",
+          options: {
+            a: "helpful",
+            b: "useful",
+            c: "obstacle",
+            d: "hindrance",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'impediment' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Impediment:</b> এর অর্থ হলো বাধা, প্রতিবন্ধক বা অন্তরায়। এটি কোনো কিছুর অগ্রগতি বা কার্যকারিতায় বাধা সৃষ্টি করে।</li><li><b>Helpful:</b> এর অর্থ হলো সহায়ক বা উপকারী। এটি কোনো কিছুকে সহজ করে বা সাহায্য করে।</li><li><b>Useful:</b> এর অর্থ হলো কাজের বা উপযোগী। এটি কোনো বিশেষ উদ্দেশ্যে ফলপ্রসূ।</li><li><b>Obstacle:</b> এর অর্থ হলো বাধা বা প্রতিবন্ধক। এটি 'impediment' এর একটি Synonym।</li><li><b>Hindrance:</b> এর অর্থ হলো বাধা বা প্রতিবন্ধকতা। এটিও 'impediment' এর একটি Synonym।</li></ul></p><p>সুতরাং, 'impediment' (বাধা) এর বিপরীত শব্দ হলো 'helpful' (সহায়ক)।</p>",
+        },
+        {
+          id: 2,
+          question: "Which one of the following is antonym of 'Laud'?",
+          options: {
+            a: "Adore",
+            b: "Inept",
+            c: "Latch",
+            d: "Abhor",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Laud' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Laud:</b> এর অর্থ হলো প্রশংসা করা, গুণগান করা বা উচ্চ প্রশংসা করা।</li><li><b>Adore:</b> এর অর্থ হলো পূজা করা, গভীরভাবে ভালোবাসা বা শ্রদ্ধা করা। এটি 'Laud' এর Synonym না হলেও ইতিবাচক অর্থ প্রকাশ করে।</li><li><b>Inept:</b> এর অর্থ হলো অদক্ষ বা অনুপযুক্ত। এটি একটি গুণবাচক শব্দ এবং 'Laud' এর সাথে এর সরাসরি সম্পর্ক নেই।</li><li><b>Latch:</b> এর অর্থ হলো খিল দেওয়া বা আটকানো। এটি একটি Verb এবং 'Laud' এর সাথে এর কোনো অর্থগত সম্পর্ক নেই।</li><li><b>Abhor:</b> এর অর্থ হলো ঘৃণা করা, অত্যন্ত অপছন্দ করা বা বিতৃষ্ণা অনুভব করা। এটি 'Laud' (প্রশংসা করা) এর সরাসরি বিপরীত।</li></ul></p><p>সুতরাং, 'Laud' এর বিপরীত শব্দ হলো 'Abhor' (ঘৃণা করা)।</p>",
+        },
+        {
+          id: 3,
+          question: "A synonym for- 'Legendary' is-",
+          options: {
+            a: "Famous",
+            b: "Fictitious",
+            c: "Intelligent",
+            d: "Legitimate",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Legendary' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Legendary:</b> এর অর্থ হলো কিংবদন্তীমূলক, বিখ্যাত বা ঐতিহ্যবাহী। এটি এমন কিছুকে বোঝায় যা গল্প বা কিংবদন্তীর অংশ হিসেবে খুব সুপরিচিত।</li><li><b>Famous:</b> এর অর্থ হলো বিখ্যাত বা সুপরিচিত। এটি 'Legendary' এর সবচেয়ে কাছাকাছি সমার্থক শব্দ।</li><li><b>Fictitious:</b> এর অর্থ হলো কাল্পনিক বা বানানো। এটি এমন কিছুকে বোঝায় যা বাস্তব নয়।</li><li><b>Intelligent:</b> এর অর্থ হলো বুদ্ধিমান বা বিচক্ষণ।</li><li><b>Legitimate:</b> এর অর্থ হলো বৈধ বা আইনসম্মত।</li></ul></p><p>সুতরাং, 'Legendary' এর সমার্থক শব্দ হলো 'Famous' (বিখ্যাত)।</p>",
+        },
+        {
+          id: 4,
+          question: "The correct synonym of 'Libel'?",
+          options: {
+            a: "Convincing",
+            b: "Annihilate",
+            c: "Enervated",
+            d: "Misrepresentation",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Libel' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Libel:</b> এর অর্থ হলো মানহানি বা অপবাদ, বিশেষ করে লিখিত আকারে যা কারো সুনাম নষ্ট করে।</li><li><b>Convincing:</b> এর অর্থ হলো বিশ্বাসযোগ্য বা প্রত্যয়জনক।</li><li><b>Annihilate:</b> এর অর্থ হলো সম্পূর্ণরূপে ধ্বংস করা বা নিশ্চিহ্ন করা।</li><li><b>Enervated:</b> এর অর্থ হলো দুর্বল বা শক্তিহীন।</li><li><b>Misrepresentation:</b> এর অর্থ হলো ভুল তথ্য উপস্থাপন বা মিথ্যা বর্ণনা। 'Libel' এর ক্ষেত্রেও ভুল তথ্য বা মিথ্যা বর্ণনা ব্যবহার করা হয় কারো সুনাম নষ্ট করার জন্য।</li></ul></p><p>সুতরাং, 'Libel' এর সমার্থক শব্দ হলো 'Misrepresentation' (ভুল তথ্য উপস্থাপন)।</p>",
+        },
+        {
+          id: 5,
+          question: "The synonym of 'impromptu' is-",
+          options: {
+            a: "improper",
+            b: "direct",
+            c: "prepared",
+            d: "extempore",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'impromptu' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Impromptu:</b> এর অর্থ হলো তাৎক্ষণিক, অপরিকল্পিত বা পূর্বপ্রস্তুতিবিহীন। এটি এমন কিছুকে বোঝায় যা তাৎক্ষণিকভাবে বা কোনো পূর্বপরিকল্পনা ছাড়া করা হয়।</li><li><b>Improper:</b> এর অর্থ হলো অনুপযুক্ত বা অসঙ্গত।</li><li><b>Direct:</b> এর অর্থ হলো সরাসরি বা সরল।</li><li><b>Prepared:</b> এর অর্থ হলো প্রস্তুত বা পূর্বপরিকল্পিত। এটি 'impromptu' এর Antonym।</li><li><b>Extempore:</b> এর অর্থ হলো তাৎক্ষণিক, পূর্বপ্রস্তুতিবিহীন বা অকস্মাৎ। এটি 'impromptu' এর একটি সঠিক সমার্থক শব্দ।</li></ul></p><p>সুতরাং, 'impromptu' এর সমার্থক শব্দ হলো 'extempore' (তাৎক্ষণিক)।</p>",
+        },
+        {
+          id: 6,
+          question: "Antonym of the word 'Intrepid' is-",
+          options: {
+            a: "Chivalrous",
+            b: "Fearless",
+            c: "Dauntless",
+            d: "Timid",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Intrepid' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Intrepid:</b> এর অর্থ হলো নির্ভীক, দুঃসাহসী বা অকুতোভয়।</li><li><b>Chivalrous:</b> এর অর্থ হলো উদার, সাহসী এবং ভদ্র। এটি সাহসের একটি দিক বোঝায়, তবে সরাসরি বিপরীত নয়।</li><li><b>Fearless:</b> এর অর্থ হলো নির্ভীক বা ভয়হীন। এটি 'Intrepid' এর একটি Synonym।</li><li><b>Dauntless:</b> এর অর্থ হলো নির্ভীক বা সাহসিক। এটিও 'Intrepid' এর একটি Synonym।</li><li><b>Timid:</b> এর অর্থ হলো ভীতু, লাজুক বা ভীরু। এটি 'Intrepid' (নির্ভীক) এর সরাসরি বিপরীত।</li></ul></p><p>সুতরাং, 'Intrepid' এর বিপরীত শব্দ হলো 'Timid' (ভীরু)।</p>",
+        },
+        {
+          id: 7,
+          question: "'Love' antonym?",
+          options: {
+            a: "Dislike",
+            b: "Hate",
+            c: "Abhor",
+            d: "Unthinkable",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Love' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Love:</b> এর অর্থ হলো ভালোবাসা বা গভীর অনুরাগ।</li><li><b>Dislike:</b> এর অর্থ হলো অপছন্দ করা। এটি ভালোবাসার বিপরীত হলেও, 'hate' এর চেয়ে কম তীব্র।</li><li><b>Hate:</b> এর অর্থ হলো ঘৃণা করা বা তীব্র অপছন্দ করা। এটি 'Love' এর সরাসরি এবং সবচেয়ে তীব্র বিপরীত শব্দ।</li><li><b>Abhor:</b> এর অর্থ হলো অত্যন্ত ঘৃণা করা বা বিতৃষ্ণা অনুভব করা। এটি 'hate' এর চেয়েও তীব্র হতে পারে, তবে 'Love' এর সাধারণ বিপরীত শব্দ হিসেবে 'Hate' বেশি উপযুক্ত।</li><li><b>Unthinkable:</b> এর অর্থ হলো অকল্পনীয় বা অসম্ভব। এটি ভালোবাসার সাথে অর্থগতভাবে সম্পর্কিত নয়।</li></ul></p><p>সাধারণত, 'Love' এর বিপরীত শব্দ হিসেবে 'Hate' কে গ্রহণ করা হয় কারণ এটি ভালোবাসার অনুভূতির সরাসরি বিপরীত তীব্র নেতিবাচক অনুভূতি প্রকাশ করে।</p>",
+        },
+        {
+          id: 8,
+          question: "'Incredible' synonym _",
+          options: {
+            a: "Unbelievable",
+            b: "Intolerant",
+            c: "Unlikely",
+            d: "Unthinking",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Incredible' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Incredible:</b> এর অর্থ হলো অবিশ্বাস্য বা অসাধারণ। এটি এমন কিছুকে বোঝায় যা বিশ্বাস করা কঠিন অথবা যা অত্যন্ত বিস্ময়কর।</li><li><b>Unbelievable:</b> এর অর্থ হলো অবিশ্বাস্য। এটি 'Incredible' এর সরাসরি সমার্থক শব্দ।</li><li><b>Intolerant:</b> এর অর্থ হলো অসহিষ্ণু।</li><li><b>Unlikely:</b> এর অর্থ হলো অসম্ভাব্য।</li><li><b>Unthinking:</b> এর অর্থ হলো অবিবেচক বা চিন্তাহীন।</li></ul></p><p>সুতরাং, 'Incredible' এর সমার্থক শব্দ হলো 'Unbelievable' (অবিশ্বাস্য)।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "As I _ Mr. Chowdhury's behavior towards me, I will not tolerate it anymore.",
+          options: {
+            a: "admire",
+            b: "engage",
+            c: "detest",
+            d: "initiate",
+          },
+          correct: "c",
+          explanation:
+            "<p>বাক্যটির অর্থ সম্পূর্ণ করার জন্য সঠিক ক্রিয়া পদটি (verb) নির্বাচন করতে হবে। বাক্যটির দ্বিতীয় অংশটি হলো 'I will not tolerate it anymore' (আমি এটি আর সহ্য করব না), যা একটি নেতিবাচক মনোভাব নির্দেশ করে। এর সাথে সামঞ্জস্যপূর্ণ একটি ক্রিয়া পদ বসাতে হবে।</p><p><ul><li><b>Admire:</b> এর অর্থ হলো প্রশংসা করা বা মুগ্ধ হওয়া। এটি একটি ইতিবাচক ক্রিয়া, যা বাক্যের অর্থের সাথে সঙ্গতিপূর্ণ নয়।</li><li><b>Engage:</b> এর অর্থ হলো জড়িত হওয়া বা নিযুক্ত করা। এটি এই প্রসঙ্গে অপ্রাসঙ্গিক।</li><li><b>Detest:</b> এর অর্থ হলো ঘৃণা করা বা তীব্র অপছন্দ করা। এটি একটি নেতিবাচক ক্রিয়া এবং 'tolerate' না করার কারণ হিসেবে এটি উপযুক্ত।</li><li><b>Initiate:</b> এর অর্থ হলো শুরু করা বা সূচনা করা। এটি এই প্রসঙ্গে প্রযোজ্য নয়।</li></ul></p><p>সুতরাং, সঠিক বাক্যটি হলো 'As I detest Mr. Chowdhury's behavior towards me, I will not tolerate it anymore.' এর অর্থ হলো, যেহেতু আমি চৌধুরী সাহেবের আমার প্রতি আচরণ ঘৃণা করি, তাই আমি এটি আর সহ্য করব না।</p>",
+        },
+        {
+          id: 10,
+          question: "The antonym of 'Infatuation' is -",
+          options: {
+            a: "Security",
+            b: "Celebrity",
+            c: "Apathy",
+            d: "Separation",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Infatuation' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infatuation:</b> এর অর্থ হলো ক্ষণস্থায়ী মোহ বা তীব্র আবেগ। এটি সাধারণত কোনো কিছুর প্রতি অস্থায়ী এবং আবেগপ্রবণ আকর্ষণকে বোঝায়।</li><li><b>Security:</b> এর অর্থ হলো নিরাপত্তা বা সুরক্ষা। এটি 'Infatuation' এর সাথে অর্থগতভাবে সম্পর্কিত নয়।</li><li><b>Celebrity:</b> এর অর্থ হলো খ্যাতি বা প্রসিদ্ধি। এটিও 'Infatuation' এর সাথে অর্থগতভাবে সম্পর্কিত নয়।</li><li><b>Apathy:</b> এর অর্থ হলো উদাসীনতা, অনীহা বা আবেগহীনতা। এটি 'Infatuation' (তীব্র আবেগ) এর সরাসরি বিপরীত।</li><li><b>Separation:</b> এর অর্থ হলো বিচ্ছেদ বা বিচ্ছিন্নতা। এটিও অর্থগতভাবে সম্পর্কিত নয়।</li></ul></p><p>সুতরাং, 'Infatuation' এর বিপরীত শব্দ হলো 'Apathy' (উদাসীনতা)।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "When you think someone is 'Introspective', you think she/he is -",
+          options: {
+            a: "Selfish",
+            b: "Thoughtful",
+            c: "Rude",
+            d: "Reserved",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Introspective' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Introspective:</b> এর অর্থ হলো আত্মদর্শী, আত্মবিশ্লেষণকারী বা নিজের চিন্তা ও অনুভূতি নিয়ে গভীরভাবে ভাবনাচিন্তা করা।</li><li><b>Selfish:</b> এর অর্থ হলো স্বার্থপর।</li><li><b>Thoughtful:</b> এর অর্থ হলো চিন্তাশীল বা গভীর চিন্তাভাবনা করা। এটি 'Introspective' এর সাথে সবচেয়ে কাছাকাছি অর্থ প্রকাশ করে।</li><li><b>Rude:</b> এর অর্থ হলো অভদ্র।</li><li><b>Reserved:</b> এর অর্থ হলো সংরক্ষিত বা স্বল্পভাষী। যদিও একজন Introspective ব্যক্তি Reserved হতে পারে, তবে 'Introspective' এর মূল অর্থ হলো চিন্তাশীলতা, Reserved থাকা নয়।</li></ul></p><p>সুতরাং, 'Introspective' মানে হলো 'Thoughtful' (চিন্তাশীল)।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "It was an indiscreet action on their part. Indiscreet means-",
+          options: {
+            a: "Unfair",
+            b: "Secret",
+            c: "Imprudent",
+            d: "Hasty",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Indiscreet' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indiscreet:</b> এর অর্থ হলো অবিবেচক, অসাবধান বা অসংযত। এটি এমন আচরণকে বোঝায় যা গোপনীয়তা বজায় রাখে না বা যা করা উচিত নয়।</li><li><b>Unfair:</b> এর অর্থ হলো অন্যায় বা পক্ষপাতদুষ্ট।</li><li><b>Secret:</b> এর অর্থ হলো গোপন।</li><li><b>Imprudent:</b> এর অর্থ হলো অবিবেচক, অপরিণামদর্শী বা নির্বোধ। এটি 'Indiscreet' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Hasty:</b> এর অর্থ হলো দ্রুত বা তড়িঘড়ি করা।</li></ul></p><p>সুতরাং, 'Indiscreet' মানে হলো 'Imprudent' (অবিবেচক)।</p>",
+        },
+        {
+          id: 13,
+          question: "Education _ our mind.",
+          options: {
+            a: "shrinks",
+            b: "emboldens",
+            c: "enlightens",
+            d: "ennobles",
+          },
+          correct: "c",
+          explanation:
+            "<p>বাক্যটির অর্থ সম্পূর্ণ করার জন্য সঠিক ক্রিয়া পদটি (verb) নির্বাচন করতে হবে। শিক্ষা আমাদের মনকে কী করে তা বোঝাতে হবে।</p><p><ul><li><b>Shrinks:</b> এর অর্থ হলো সঙ্কুচিত করা। শিক্ষা মনকে সঙ্কুচিত করে না।</li><li><b>Emboldens:</b> এর অর্থ হলো সাহস যোগানো বা উৎসাহিত করা। এটি শিক্ষার একটি ফল হতে পারে, তবে সরাসরি মনের ওপর এর প্রভাব বোঝায় না।</li><li><b>Enlightens:</b> এর অর্থ হলো আলোকিত করা, জ্ঞান দান করা বা বোধশক্তি বৃদ্ধি করা। শিক্ষা আমাদের মনকে আলোকিত করে এবং জ্ঞান বৃদ্ধি করে। এটি সবচেয়ে উপযুক্ত শব্দ।</li><li><b>Ennobles:</b> এর অর্থ হলো মহৎ করা বা উন্নত করা। এটিও শিক্ষার একটি ফল হতে পারে, তবে 'enlightens' মনকে জ্ঞান ও বুদ্ধিতে সমৃদ্ধ করার মূল প্রক্রিয়াকে আরও ভালোভাবে বোঝায়।</li></ul></p><p>সুতরাং, সঠিক বাক্যটি হলো 'Education enlightens our mind.' এর অর্থ হলো শিক্ষা আমাদের মনকে আলোকিত করে।</p>",
+        },
+        {
+          id: 14,
+          question: "The automobile's exhaust system _ foul-smelling fumes.",
+          options: {
+            a: "attracted",
+            b: "condensed",
+            c: "neutralized",
+            d: "emitted",
+          },
+          correct: "d",
+          explanation:
+            "<p>বাক্যটির অর্থ সম্পূর্ণ করার জন্য সঠিক ক্রিয়া পদটি (verb) নির্বাচন করতে হবে। গাড়ির এক্সহস্ট সিস্টেম থেকে দুর্গন্ধযুক্ত ধোঁয়া কী হয় তা বোঝাতে হবে।</p><p><ul><li><b>Attracted:</b> এর অর্থ হলো আকর্ষণ করা। এক্সহস্ট সিস্টেম ধোঁয়া আকর্ষণ করে না।</li><li><b>Condensed:</b> এর অর্থ হলো ঘনীভূত করা বা জমাট বাঁধা। এক্সহস্ট সিস্টেম ধোঁয়া ঘনীভূত করে না।</li><li><b>Neutralized:</b> এর অর্থ হলো নিষ্ক্রিয় করা বা প্রভাবমুক্ত করা। যদিও কিছু এক্সহস্ট সিস্টেম ধোঁয়াকে কিছুটা নিরপেক্ষ করতে পারে, তবে মূল কাজটি হলো ধোঁয়া নির্গত করা।</li><li><b>Emitted:</b> এর অর্থ হলো নির্গত করা বা নিঃসৃত করা। এক্সহস্ট সিস্টেমের প্রধান কাজ হলো ধোঁয়া এবং গ্যাস নির্গত করা।</li></ul></p><p>সুতরাং, সঠিক বাক্যটি হলো 'The automobile's exhaust system emitted foul-smelling fumes.' এর অর্থ হলো গাড়ির এক্সহস্ট সিস্টেম দুর্গন্ধযুক্ত ধোঁয়া নির্গত করে।</p>",
+        },
+        {
+          id: 15,
+          question: "Which one is the correct synonym for 'Impecunious'?",
+          options: {
+            a: "Irreverent",
+            b: "Intangible",
+            c: "Penniless",
+            d: "Faultless",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Impecunious' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Impecunious:</b> এর অর্থ হলো নিঃস্ব, দরিদ্র বা কপর্দকহীন।</li><li><b>Irreverent:</b> এর অর্থ হলো অসম্মানজনক বা শ্রদ্ধাহীন।</li><li><b>Intangible:</b> এর অর্থ হলো অস্পৃশ্য বা অস্পষ্ট।</li><li><b>Penniless:</b> এর অর্থ হলো কপর্দকহীন, নিঃস্ব বা যার কাছে কোনো টাকা নেই। এটি 'Impecunious' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Faultless:</b> এর অর্থ হলো ত্রুটিহীন বা নির্দোষ।</li></ul></p><p>সুতরাং, 'Impecunious' এর সমার্থক শব্দ হলো 'Penniless' (নিঃস্ব)।</p>",
+        },
+        {
+          id: 16,
+          question: "Which one is the correct synonym for 'Irrevocable'?",
+          options: {
+            a: "Irritable",
+            b: "Sluggish",
+            c: "Unalterable",
+            d: "Agreeable",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Irrevocable' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Irrevocable:</b> এর অর্থ হলো অপরিবর্তনীয়, বাতিল করা যায় না এমন বা চূড়ান্ত।</li><li><b>Irritable:</b> এর অর্থ হলো খিটখিটে বা সহজে বিরক্ত হয় এমন।</li><li><b>Sluggish:</b> এর অর্থ হলো অলস বা মন্থর।</li><li><b>Unalterable:</b> এর অর্থ হলো অপরিবর্তনীয় বা পরিবর্তন করা যায় না এমন। এটি 'Irrevocable' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Agreeable:</b> এর অর্থ হলো সম্মত বা আনন্দদায়ক।</li></ul></p><p>সুতরাং, 'Irrevocable' এর সমার্থক শব্দ হলো 'Unalterable' (অপরিবর্তনীয়)।</p>",
+        },
+        {
+          id: 17,
+          question: "Which one is the correct synonym for 'Intractable'?",
+          options: {
+            a: "Refractory",
+            b: "Blameless",
+            c: "Tedious",
+            d: "Incompatible",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Intractable' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Intractable:</b> এর অর্থ হলো অবাধ্য, অনমনীয় বা নিয়ন্ত্রণ করা কঠিন এমন। এটি এমন সমস্যা বা ব্যক্তিকে বোঝায় যাকে সহজে নিয়ন্ত্রণ বা পরিচালনা করা যায় না।</li><li><b>Refractory:</b> এর অর্থ হলো অবাধ্য, অনমনীয় বা সহজে পরিচালনা করা যায় না এমন। এটি 'Intractable' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Blameless:</b> এর অর্থ হলো নির্দোষ বা নিষ্পাপ।</li><li><b>Tedious:</b> এর অর্থ হলো বিরক্তিকর বা ক্লান্তিকর।</li><li><b>Incompatible:</b> এর অর্থ হলো বেমানান বা অসঙ্গতিপূর্ণ।</li></ul></p><p>সুতরাং, 'Intractable' এর সমার্থক শব্দ হলো 'Refractory' (অবাধ্য)।</p>",
+        },
+        {
+          id: 18,
+          question: 'Which of the following is the antonym of "Intrinsic"?',
+          options: {
+            a: "Elemental",
+            b: "Useless",
+            c: "Obscure",
+            d: "Appended",
+          },
+          correct: "d",
+          explanation:
+            '<p>এখানে "Intrinsic" শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Intrinsic:</b> এর অর্থ হলো অন্তর্নিহিত, মৌলিক বা সহজাত। এটি কোনো কিছুর নিজস্ব বা অপরিহার্য গুণাবলীকে বোঝায়।</li><li><b>Elemental:</b> এর অর্থ হলো মৌলিক বা প্রাথমিক। এটি \'Intrinsic\' এর একটি Synonym।</li><li><b>Useless:</b> এর অর্থ হলো অকেজো বা অপ্রয়োজনীয়।</li><li><b>Obscure:</b> এর অর্থ হলো অস্পষ্ট বা দুর্বোধ্য।</li><li><b>Appended:</b> এর অর্থ হলো সংযুক্ত করা, যোগ করা বা পরে যুক্ত করা হয়েছে এমন। এটি এমন কিছুকে বোঝায় যা বাইরে থেকে যুক্ত করা হয়েছে, যা \'Intrinsic\' (অন্তর্নিহিত) এর বিপরীত।</li></ul></p><p>সুতরাং, "Intrinsic" এর বিপরীত শব্দ হলো "Appended" (সংযুক্ত)।</p>',
+        },
+        {
+          id: 19,
+          question: 'The antonym of "Incongruous"-',
+          options: {
+            a: "Dexterous",
+            b: "Indifference",
+            c: "Harmonious",
+            d: "Crafty",
+          },
+          correct: "c",
+          explanation:
+            '<p>এখানে "Incongruous" শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Incongruous:</b> এর অর্থ হলো বেমানান, অসঙ্গতিপূর্ণ বা খাপছাড়া। এটি এমন কিছুকে বোঝায় যা তার পরিবেশ বা পরিস্থিতির সাথে মানানসই নয়।</li><li><b>Dexterous:</b> এর অর্থ হলো দক্ষ বা চতুর।</li><li><b><b>Indifference:</b></b> এর অর্থ হলো উদাসীনতা।</li><li><b>Harmonious:</b> এর অর্থ হলো সুসংগত, সামঞ্জস্যপূর্ণ বা মানানসই। এটি \'Incongruous\' (বেমানান) এর সরাসরি বিপরীত।</li><li><b>Crafty:</b> এর অর্থ হলো ধূর্ত বা চতুর।</li></ul></p><p>সুতরাং, "Incongruous" এর বিপরীত শব্দ হলো "Harmonious" (সুসংগত)।</p>',
+        },
+        {
+          id: 20,
+          question: 'Which of the following is the synonym of "Luxuriant"?',
+          options: {
+            a: "Profuse",
+            b: "Sluggish",
+            c: "Grudge",
+            d: "Loiter",
+          },
+          correct: "a",
+          explanation:
+            '<p>এখানে "Luxuriant" শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Luxuriant:</b> এর অর্থ হলো প্রচুর, প্রাচুর্যপূর্ণ, সমৃদ্ধ বা সুগঠিত। এটি সাধারণত উদ্ভিদ, চুল বা কোনো কিছুর প্রবৃদ্ধির ক্ষেত্রে ব্যবহৃত হয় যা ঘন এবং প্রচুর।</li><li><b>Profuse:</b> এর অর্থ হলো প্রচুর, প্রাচুর্যপূর্ণ বা অতিরিক্ত। এটি \'Luxuriant\' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Sluggish:</b> এর অর্থ হলো অলস বা মন্থর।</li><li><b>Grudge:</b> এর অর্থ হলো বিদ্বেষ বা অসন্তোষ।</li><li><b>Loiter:</b> এর অর্থ হলো অলসভাবে ঘোরাঘুরি করা বা বিলম্ব করা।</li></ul></p><p>সুতরাং, "Luxuriant" এর সমার্থক শব্দ হলো "Profuse" (প্রচুর)।</p>',
+        },
+        {
+          id: 21,
+          question: "'Inimical' is similar to -",
+          options: {
+            a: "Fickle",
+            b: "Hostile",
+            c: "Virtuous",
+            d: "Swift",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Inimical' শব্দের সমার্থক শব্দ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Inimical:</b> এর অর্থ হলো প্রতিকূল, ক্ষতিকর বা শত্রুভাবাপন্ন। এটি এমন কিছুকে বোঝায় যা প্রতিকূল পরিবেশ তৈরি করে বা শত্রুতা প্রকাশ করে।</li><li><b>Fickle:</b> এর অর্থ হলো অস্থিরমতি বা পরিবর্তনশীল।</li><li><b>Hostile:</b> এর অর্থ হলো শত্রুভাবাপন্ন, প্রতিকূল বা বিদ্বেষপূর্ণ। এটি 'Inimical' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Virtuous:</b> এর অর্থ হলো ধার্মিক বা পুণ্যবান।</li><li><b>Swift:</b> এর অর্থ হলো দ্রুত বা দ্রুতগামী।</li></ul></p><p>সুতরাং, 'Inimical' এর সমার্থক শব্দ হলো 'Hostile' (শত্রুভাবাপন্ন)।</p>",
+        },
+        {
+          id: 22,
+          question: "'Illicit' is similar to-",
+          options: {
+            a: "Infertile",
+            b: "Illegal",
+            c: "Glorious",
+            d: "Expert",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Illicit' শব্দের সমার্থক শব্দ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Illicit:</b> এর অর্থ হলো অবৈধ, বেআইনি বা নিষিদ্ধ।</li><li><b>Infertile:</b> এর অর্থ হলো অনুর্বর বা বন্ধ্যা।</li><li><b>Illegal:</b> এর অর্থ হলো অবৈধ বা বেআইনি। এটি 'Illicit' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Glorious:</b> এর অর্থ হলো গৌরবময় বা মহিমান্বিত।</li><li><b>Expert:</b> এর অর্থ হলো বিশেষজ্ঞ বা দক্ষ।</li></ul></p><p>সুতরাং, 'Illicit' এর সমার্থক শব্দ হলো 'Illegal' (অবৈধ)।</p>",
+        },
+        {
+          id: 23,
+          question: "The meaning of 'indigenous' is -",
+          options: {
+            a: "Locale",
+            b: "Distant",
+            c: "Foreign",
+            d: "Native",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'indigenous' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indigenous:</b> এর অর্থ হলো স্থানীয়, আদিবাসী বা কোনো নির্দিষ্ট অঞ্চলের মূল অধিবাসী বা উদ্ভিদ/প্রাণী।</li><li><b>Locale:</b> এর অর্থ হলো স্থান বা পটভূমি। এটি একটি Noun এবং 'indigenous' এর অর্থের সাথে সরাসরি সম্পর্ক নেই।</li><li><b>Distant:</b> এর অর্থ হলো দূরবর্তী।</li><li><b>Foreign:</b> এর অর্থ হলো বিদেশী বা বহিরাগত। এটি 'indigenous' এর Antonym।</li><li><b>Native:</b> এর অর্থ হলো স্থানীয়, আদিবাসী বা জন্মগত। এটি 'indigenous' এর একটি সঠিক সমার্থক শব্দ।</li></ul></p><p>সুতরাং, 'indigenous' এর অর্থ হলো 'Native' (স্থানীয়)।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "The discontented students retaliated by boycotting the school cafeteria. Retaliated means -",
+          options: {
+            a: "rewarded",
+            b: "vindicated",
+            c: "took revenge",
+            d: "fluctuated",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Retaliated' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Retaliated:</b> এর অর্থ হলো প্রতিশোধ নেওয়া বা পাল্টা আক্রমণ করা। বাক্যটিতে অসন্তুষ্ট শিক্ষার্থীরা স্কুলের ক্যাফেটেরিয়া বর্জন করে প্রতিশোধ নিয়েছে বোঝানো হয়েছে।</li><li><b>Rewarded:</b> এর অর্থ হলো পুরস্কৃত করা।</li><li><b>Vindicated:</b> এর অর্থ হলো নির্দোষ প্রমাণ করা বা সমর্থন করা।</li><li><b>Took revenge:</b> এর অর্থ হলো প্রতিশোধ নেওয়া। এটি 'Retaliated' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Fluctuated:</b> এর অর্থ হলো ওঠানামা করা বা পরিবর্তন হওয়া।</li></ul></p><p>সুতরাং, 'Retaliated' মানে হলো 'took revenge' (প্রতিশোধ নেওয়া)।</p>",
+        },
+        {
+          id: 25,
+          question: "The raccoon is a nocturnal animal.",
+          options: {
+            a: "harmless",
+            b: "night",
+            c: "marsupial",
+            d: "diurnal",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'nocturnal' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Nocturnal:</b> এর অর্থ হলো নিশাচর বা রাতের বেলায় সক্রিয়। এটি এমন প্রাণীকে বোঝায় যা প্রধানত রাতে শিকার করে বা চলাচল করে।</li><li><b>Harmless:</b> এর অর্থ হলো নিরীহ বা ক্ষতিকর নয়।</li><li><b>Night:</b> এর অর্থ হলো রাত। 'nocturnal animal' মানে 'night animal' অর্থাৎ রাতের বেলায় সক্রিয় প্রাণী।</li><li><b>Marsupial:</b> এর অর্থ হলো থলেযুক্ত স্তন্যপায়ী প্রাণী।</li><li><b>Diurnal:</b> এর অর্থ হলো দিবাচর বা দিনের বেলায় সক্রিয়। এটি 'nocturnal' এর Antonym।</li></ul></p><p>সুতরাং, 'nocturnal' মানে হলো 'night' (রাতের)।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "A new government department was established to control maritime traffic.",
+          options: {
+            a: "sea",
+            b: "air",
+            c: "highway",
+            d: "military",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'maritime' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Maritime:</b> এর অর্থ হলো সামুদ্রিক বা সমুদ্র সম্পর্কিত। এটি সাধারণত সমুদ্রপথ, জাহাজ বা সমুদ্র তীরবর্তী কার্যকলাপের সাথে জড়িত।</li><li><b>Sea:</b> এর অর্থ হলো সমুদ্র। 'maritime traffic' মানে 'sea traffic' অর্থাৎ সমুদ্রপথে চলাচল। এটি 'maritime' এর একটি সঠিক অর্থ।</li><li><b>Air:</b> এর অর্থ হলো আকাশ।</li><li><b>Highway:</b> এর অর্থ হলো সড়কপথ।</li><li><b>Military:</b> এর অর্থ হলো সামরিক।</li></ul></p><p>সুতরাং, 'maritime' মানে হলো 'sea' (সামুদ্রিক)।</p>",
+        },
+        {
+          id: 27,
+          question: "Choose the word that best defines 'prosaic':",
+          options: {
+            a: "ordinary",
+            b: "exotic",
+            c: "mundane",
+            d: "ostentatious",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'prosaic' শব্দের সবচেয়ে উপযুক্ত অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Prosaic:</b> এর অর্থ হলো নীরস, সাধারণ, মামুলি বা কাব্যিক নয় এমন। এটি এমন কিছুকে বোঝায় যা উৎসাহব্যঞ্জক নয় বা কল্পনাপ্রবণ নয়।</li><li><b>Ordinary:</b> এর অর্থ হলো সাধারণ বা প্রচলিত। এটি 'prosaic' এর একটি উপযুক্ত অর্থ।</li><li><b>Exotic:</b> এর অর্থ হলো বিদেশি বা উদ্ভট।</li><li><b>Mundane:</b> এর অর্থ হলো জাগতিক, সাধারণ বা একঘেয়ে। এটিও 'prosaic' এর একটি খুব কাছাকাছি সমার্থক শব্দ। তবে 'ordinary' সরাসরি সাধারণ অর্থ বোঝায়।</li><li><b>Ostentatious:</b> এর অর্থ হলো জাঁকজমকপূর্ণ বা প্রদর্শনে আগ্রহী।</li></ul></p><p>'Ordinary' এবং 'mundane' উভয়ই 'prosaic' এর সমার্থক হতে পারে। তবে, প্রশ্নে 'best defines' বলা হয়েছে, এবং 'ordinary' একটি ব্যাপক অর্থ বোঝায় যা 'prosaic' এর মূল বৈশিষ্ট্যকে তুলে ধরে।</p>",
+        },
+        {
+          id: 28,
+          question: "'Juvenile' implies -",
+          options: {
+            a: "sophisticated",
+            b: "accomplished",
+            c: "streetwise",
+            d: "inexperienced",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Juvenile' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Juvenile:</b> এর অর্থ হলো অপ্রাপ্তবয়স্ক, কিশোরসুলভ বা অপরিণত। এটি এমন ব্যক্তি বা আচরণকে বোঝায় যা বয়স বা অভিজ্ঞতার অভাবে অপরিপক্ব।</li><li><b>Sophisticated:</b> এর অর্থ হলো পরিশীলিত বা জটিল।</li><li><b>Accomplished:</b> এর অর্থ হলো সম্পন্ন বা দক্ষ।</li><li><b>Streetwise:</b> এর অর্থ হলো বাস্তব জ্ঞানসম্পন্ন বা চতুর।</li><li><b>Inexperienced:</b> এর অর্থ হলো অনভিজ্ঞ বা কাঁচা। এটি 'Juvenile' এর একটি সঠিক অর্থ।</li></ul></p><p>সুতরাং, 'Juvenile' মানে হলো 'inexperienced' (অনভিজ্ঞ)।</p>",
+        },
+        {
+          id: 29,
+          question: "The synonym of 'jeopardy' is -",
+          options: {
+            a: "existing",
+            b: "sluggish",
+            c: "peril",
+            d: "protest",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'jeopardy' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Jeopardy:</b> এর অর্থ হলো বিপদ, ঝুঁকি বা সংকট।</li><li><b>Existing:</b> এর অর্থ হলো বিদ্যমান বা বর্তমান।</li><li><b>Sluggish:</b> এর অর্থ হলো অলস বা মন্থর।</li><li><b>Peril:</b> এর অর্থ হলো বিপদ, ঝুঁকি বা গুরুতর বিপদ। এটি 'jeopardy' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Protest:</b> এর অর্থ হলো প্রতিবাদ।</li></ul></p><p>সুতরাং, 'jeopardy' এর সমার্থক শব্দ হলো 'peril' (বিপদ)।</p>",
+        },
+        {
+          id: 30,
+          question: "The antonym of the word 'infatuation' is -",
+          options: {
+            a: "Celebration",
+            b: "Apathy",
+            c: "Separation",
+            d: "Psychopath",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'infatuation' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infatuation:</b> এর অর্থ হলো ক্ষণস্থায়ী মোহ বা তীব্র আবেগ। এটি সাধারণত কোনো কিছুর প্রতি অস্থায়ী এবং আবেগপ্রবণ আকর্ষণকে বোঝায়।</li><li><b>Celebration:</b> এর অর্থ হলো উদযাপন। এটি 'infatuation' এর সাথে অর্থগতভাবে সম্পর্কিত নয়।</li><li><b>Apathy:</b> এর অর্থ হলো উদাসীনতা, অনীহা বা আবেগহীনতা। এটি 'infatuation' (তীব্র আবেগ) এর সরাসরি বিপরীত।</li><li><b>Separation:</b> এর অর্থ হলো বিচ্ছেদ বা বিচ্ছিন্নতা। এটিও অর্থগতভাবে সম্পর্কিত নয়।</li><li><b>Psychopath:</b> এর অর্থ হলো মনোরোগী। এটি অর্থগতভাবে সম্পর্কিত নয়।</li></ul></p><p>সুতরাং, 'infatuation' এর বিপরীত শব্দ হলো 'Apathy' (উদাসীনতা)।</p>",
+        },
+        {
+          id: 31,
+          question: "Find the antonym of 'Impertinent' -",
+          options: {
+            a: "Bold",
+            b: "Respectful",
+            c: "Talkative",
+            d: "Godless",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Impertinent' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Impertinent:</b> এর অর্থ হলো ধৃষ্ট, বেয়াদব, অশিষ্ট বা অপ্রাসঙ্গিক। এটি সাধারণত এমন আচরণকে বোঝায় যা সম্মানজনক নয় বা যা পরিস্থিতি অনুযায়ী উপযুক্ত নয়।</li><li><b>Bold:</b> এর অর্থ হলো সাহসী বা নির্ভীক।</li><li><b>Respectful:</b> এর অর্থ হলো শ্রদ্ধাশীল বা সম্মানজনক। এটি 'Impertinent' (বেয়াদব) এর সরাসরি বিপরীত।</li><li><b>Talkative:</b> এর অর্থ হলো বাচাল বা বেশি কথা বলা।</li><li><b>Godless:</b> এর অর্থ হলো ঈশ্বরহীন বা অধার্মিক।</li></ul></p><p>সুতরাং, 'Impertinent' এর বিপরীত শব্দ হলো 'Respectful' (শ্রদ্ধাশীল)।</p>",
+        },
+        {
+          id: 32,
+          question: "The antonym of 'Indifference' is -",
+          options: {
+            a: "Ardour",
+            b: "Compassion",
+            c: "Anxiety",
+            d: "Concern",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Indifference' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indifference:</b> এর অর্থ হলো উদাসীনতা, অনীহা বা আগ্রহহীনতা। এটি কোনো কিছুর প্রতি আবেগ বা মনোযোগের অভাবকে বোঝায়।</li><li><b>Ardour:</b> এর অর্থ হলো তীব্র উৎসাহ, আবেগ বা উদ্দীপনা। এটি 'Indifference' (উদাসীনতা) এর সরাসরি বিপরীত।</li><li><b>Compassion:</b> এর অর্থ হলো সহানুভূতি বা করুণা।</li><li><b>Anxiety:</b> এর অর্থ হলো উদ্বেগ বা দুশ্চিন্তা।</li><li><b>Concern:</b> এর অর্থ হলো উদ্বেগ বা আগ্রহ। 'Concern' আংশিকভাবে বিপরীত হলেও, 'Ardour' আরও তীব্র আবেগ এবং উৎসাহকে বোঝায়।</li></ul></p><p>সুতরাং, 'Indifference' এর বিপরীত শব্দ হলো 'Ardour' (তীব্র আবেগ)।</p>",
+        },
+        {
+          id: 33,
+          question: "What would be the right antonym for 'Initiative'?",
+          options: {
+            a: "Apathy",
+            b: "Indolence",
+            c: "Enterprise",
+            d: "Activity",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Initiative' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Initiative:</b> এর অর্থ হলো উদ্যোগ, সক্রিয়তা বা নতুন কিছু শুরু করার ক্ষমতা।</li><li><b>Apathy:</b> এর অর্থ হলো উদাসীনতা, অনীহা বা নিস্ক্রিয়তা। এটি 'Initiative' (উদ্যোগ) এর সরাসরি বিপরীত।</li><li><b>Indolence:</b> এর অর্থ হলো আলস্য বা জড়তা। এটিও 'Initiative' এর বিপরীত হতে পারে, তবে 'Apathy' সরাসরি সক্রিয়তার অভাবকে বোঝায়।</li><li><b>Enterprise:</b> এর অর্থ হলো উদ্যোগ, সাহস বা নতুন ব্যবসা। এটি 'Initiative' এর একটি Synonym।</li><li><b>Activity:</b> এর অর্থ হলো কার্যকলাপ বা সক্রিয়তা। এটি 'Initiative' এর একটি Synonym।</li></ul></p><p>সুতরাং, 'Initiative' এর বিপরীত শব্দ হলো 'Apathy' (উদাসীনতা)।</p>",
+        },
+        {
+          id: 34,
+          question: "What would be the right synonym for 'Initiative'?",
+          options: {
+            a: "Apathy",
+            b: "Indolence",
+            c: "Enterprise",
+            d: "Activity",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Initiative' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Initiative:</b> এর অর্থ হলো উদ্যোগ, সক্রিয়তা বা নতুন কিছু শুরু করার ক্ষমতা।</li><li><b>Apathy:</b> এর অর্থ হলো উদাসীনতা। এটি 'Initiative' এর Antonym।</li><li><b>Indolence:</b> এর অর্থ হলো আলস্য। এটিও 'Initiative' এর Antonym।</li><li><b>Enterprise:</b> এর অর্থ হলো উদ্যোগ, সাহস বা নতুন ব্যবসা। এটি 'Initiative' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Activity:</b> এর অর্থ হলো কার্যকলাপ বা সক্রিয়তা। 'Activity' 'Initiative' এর একটি কাছাকাছি অর্থ হলেও, 'Enterprise' 'Initiative' এর মূল অর্থ, অর্থাৎ নতুন কিছু শুরু করার বা ঝুঁকি নেওয়ার ক্ষমতাকে আরও ভালোভাবে তুলে ধরে।</li></ul></p><p>সুতরাং, 'Initiative' এর সমার্থক শব্দ হলো 'Enterprise' (উদ্যোগ)।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "Choose the one that best expresses the meaning of the given word: IMPROVEMENT",
+          options: {
+            a: "Promotion",
+            b: "Advancement",
+            c: "Betterment",
+            d: "Preference3",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'IMPROVEMENT' শব্দের সবচেয়ে উপযুক্ত অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Improvement:</b> এর অর্থ হলো উন্নতি, উন্নয়ন বা ভালো হওয়া। এটি কোনো কিছুর অবস্থার ইতিবাচক পরিবর্তনকে বোঝায়।</li><li><b>Promotion:</b> এর অর্থ হলো পদোন্নতি বা প্রচার।</li><li><b>Advancement:</b> এর অর্থ হলো অগ্রগতি বা উন্নতি। এটি 'Improvement' এর একটি কাছাকাছি সমার্থক শব্দ, তবে 'Betterment' আরও সরাসরি উন্নতিকে বোঝায়।</li><li><b>Betterment:</b> এর অর্থ হলো উন্নতি, ভালো করা বা উন্নতকরণ। এটি 'Improvement' এর একটি সঠিক এবং সবচেয়ে উপযুক্ত সমার্থক শব্দ।</li><li><b>Preference:</b> এর অর্থ হলো অগ্রাধিকার বা পছন্দ।</li></ul></p><p>সুতরাং, 'IMPROVEMENT' এর সবচেয়ে উপযুক্ত অর্থ হলো 'Betterment' (উন্নতি)।</p>",
+        },
+        {
+          id: 36,
+          question: "The word 'Infinity' means -",
+          options: {
+            a: "a number smaller than any other",
+            b: "the base form of a verb",
+            c: "a large number but possible to count",
+            d: "the state of having no end or limit",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Infinity' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infinity:</b> এর অর্থ হলো অসীমতা, অনন্তকাল বা যার কোনো শেষ বা সীমা নেই।</li><li><b>a number smaller than any other:</b> এটি ক্ষুদ্রতম সংখ্যাকে বোঝায়, যা অসীমতার বিপরীত।</li><li><b>the base form of a verb:</b> এটি ব্যাকরণগত একটি ধারণা, যা 'Infinity' এর অর্থের সাথে সম্পর্কিত নয়।</li><li><b>a large number but possible to count:</b> এটি একটি বড় সংখ্যা যা গণনা করা সম্ভব, যা অসীমতার ধারণার বিপরীত।</li><li><b>the state of having no end or limit:</b> এর অর্থ হলো কোনো শেষ বা সীমা না থাকার অবস্থা। এটি 'Infinity' এর সঠিক সংজ্ঞা।</li></ul></p><p>সুতরাং, 'Infinity' মানে হলো 'the state of having no end or limit' (কোনো শেষ বা সীমা না থাকার অবস্থা)।</p>",
+        },
+        {
+          id: 37,
+          question: "The synonym of 'Indolent' is -",
+          options: {
+            a: "Diligent",
+            b: "Assiduous",
+            c: "Industrious",
+            d: "Unoccupied",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Indolent' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indolent:</b> এর অর্থ হলো অলস, নিষ্ক্রিয় বা অকর্মঠ।</li><li><b>Diligent:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Assiduous:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Industrious:</b> এর অর্থ হলো পরিশ্রমী বা কর্মঠ। এটি 'Indolent' এর Antonym।</li><li><b>Unoccupied:</b> এর অর্থ হলো অনধিকারভুক্ত, ব্যস্ত নয় এমন বা অলস। এটি 'Indolent' এর একটি উপযুক্ত সমার্থক শব্দ কারণ একজন অলস ব্যক্তি সাধারণত Unoccupied থাকে।</li></ul></p><p>সুতরাং, 'Indolent' এর সমার্থক শব্দ হলো 'Unoccupied' (অলস/নিষ্ক্রিয়)।</p>",
+        },
+        {
+          id: 38,
+          question: "The word 'Infinity' means -",
+          options: {
+            a: "a number smaller than any other",
+            b: "the base form of a verb",
+            c: "a large number but possible to count",
+            d: "the state of having no end or limit",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Infinity' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infinity:</b> এর অর্থ হলো অসীমতা, অনন্তকাল বা যার কোনো শেষ বা সীমা নেই।</li><li><b>a number smaller than any other:</b> এটি ক্ষুদ্রতম সংখ্যাকে বোঝায়, যা অসীমতার বিপরীত।</li><li><b>the base form of a verb:</b> এটি ব্যাকরণগত একটি ধারণা, যা 'Infinity' এর অর্থের সাথে সম্পর্কিত নয়।</li><li><b>a large number but possible to count:</b> এটি একটি বড় সংখ্যা যা গণনা করা সম্ভব, যা অসীমতার ধারণার বিপরীত।</li><li><b>the state of having no end or limit:</b> এর অর্থ হলো কোনো শেষ বা সীমা না থাকার অবস্থা। এটি 'Infinity' এর সঠিক সংজ্ঞা।</li></ul></p><p>সুতরাং, 'Infinity' মানে হলো 'the state of having no end or limit' (কোনো শেষ বা সীমা না থাকার অবস্থা)।</p>",
+        },
+        {
+          id: 39,
+          question: "The synonym of 'Indolent' is -",
+          options: {
+            a: "Diligent",
+            b: "Assiduous",
+            c: "Industrious",
+            d: "Unoccupied",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Indolent' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indolent:</b> এর অর্থ হলো অলস, নিষ্ক্রিয় বা অকর্মঠ।</li><li><b>Diligent:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Assiduous:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Industrious:</b> এর অর্থ হলো পরিশ্রমী বা কর্মঠ। এটি 'Indolent' এর Antonym।</li><li><b>Unoccupied:</b> এর অর্থ হলো অনধিকারভুক্ত, ব্যস্ত নয় এমন বা অলস। এটি 'Indolent' এর একটি উপযুক্ত সমার্থক শব্দ কারণ একজন অলস ব্যক্তি সাধারণত Unoccupied থাকে।</li></ul></p><p>সুতরাং, 'Indolent' এর সমার্থক শব্দ হলো 'Unoccupied' (অলস/নিষ্ক্রিয়)।</p>",
+        },
+        {
+          id: 40,
+          question: "The word 'Infinity' means -",
+          options: {
+            a: "a number smaller than any other",
+            b: "the base form of a verb",
+            c: "a large number but possible to count",
+            d: "the state of having no end or limit",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Infinity' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infinity:</b> এর অর্থ হলো অসীমতা, অনন্তকাল বা যার কোনো শেষ বা সীমা নেই।</li><li><b>a number smaller than any other:</b> এটি ক্ষুদ্রতম সংখ্যাকে বোঝায়, যা অসীমতার বিপরীত।</li><li><b>the base form of a verb:</b> এটি ব্যাকরণগত একটি ধারণা, যা 'Infinity' এর অর্থের সাথে সম্পর্কিত নয়।</li><li><b>a large number but possible to count:</b> এটি একটি বড় সংখ্যা যা গণনা করা সম্ভব, যা অসীমতার ধারণার বিপরীত।</li><li><b>the state of having no end or limit:</b> এর অর্থ হলো কোনো শেষ বা সীমা না থাকার অবস্থা। এটি 'Infinity' এর সঠিক সংজ্ঞা।</li></ul></p><p>সুতরাং, 'Infinity' মানে হলো 'the state of having no end or limit' (কোনো শেষ বা সীমা না থাকার অবস্থা)।</p>",
+        },
+        {
+          id: 41,
+          question: "The synonym of 'Indolent' is -",
+          options: {
+            a: "Diligent",
+            b: "Assiduous",
+            c: "Industrious",
+            d: "Unoccupied",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Indolent' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indolent:</b> এর অর্থ হলো অলস, নিষ্ক্রিয় বা অকর্মঠ।</li><li><b>Diligent:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Assiduous:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Industrious:</b> এর অর্থ হলো পরিশ্রমী বা কর্মঠ। এটি 'Indolent' এর Antonym।</li><li><b>Unoccupied:</b> এর অর্থ হলো অনধিকারভুক্ত, ব্যস্ত নয় এমন বা অলস। এটি 'Indolent' এর একটি উপযুক্ত সমার্থক শব্দ কারণ একজন অলস ব্যক্তি সাধারণত Unoccupied থাকে।</li></ul></p><p>সুতরাং, 'Indolent' এর সমার্থক শব্দ হলো 'Unoccupied' (অলস/নিষ্ক্রিয়)।</p>",
+        },
+        {
+          id: 42,
+          question: "The word 'Infinity' means -",
+          options: {
+            a: "a number smaller than any other",
+            b: "the base form of a verb",
+            c: "a large number but possible to count",
+            d: "the state of having no end or limit",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Infinity' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infinity:</b> এর অর্থ হলো অসীমতা, অনন্তকাল বা যার কোনো শেষ বা সীমা নেই।</li><li><b>a number smaller than any other:</b> এটি ক্ষুদ্রতম সংখ্যাকে বোঝায়, যা অসীমতার বিপরীত।</li><li><b>the base form of a verb:</b> এটি ব্যাকরণগত একটি ধারণা, যা 'Infinity' এর অর্থের সাথে সম্পর্কিত নয়।</li><li><b>a large number but possible to count:</b> এটি একটি বড় সংখ্যা যা গণনা করা সম্ভব, যা অসীমতার ধারণার বিপরীত।</li><li><b>the state of having no end or limit:</b> এর অর্থ হলো কোনো শেষ বা সীমা না থাকার অবস্থা। এটি 'Infinity' এর সঠিক সংজ্ঞা।</li></ul></p><p>সুতরাং, 'Infinity' মানে হলো 'the state of having no end or limit' (কোনো শেষ বা সীমা না থাকার অবস্থা)।</p>",
+        },
+        {
+          id: 43,
+          question: "The synonym of 'Indolent' is -",
+          options: {
+            a: "Diligent",
+            b: "Assiduous",
+            c: "Industrious",
+            d: "Unoccupied",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Indolent' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indolent:</b> এর অর্থ হলো অলস, নিষ্ক্রিয় বা অকর্মঠ।</li><li><b>Diligent:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Assiduous:</b> এর অর্থ হলো পরিশ্রমী বা অধ্যবসায়ী। এটি 'Indolent' এর Antonym।</li><li><b>Industrious:</b> এর অর্থ হলো পরিশ্রমী বা কর্মঠ। এটি 'Indolent' এর Antonym।</li><li><b>Unoccupied:</b> এর অর্থ হলো অনধিকারভুক্ত, ব্যস্ত নয় এমন বা অলস। এটি 'Indolent' এর একটি উপযুক্ত সমার্থক শব্দ কারণ একজন অলস ব্যক্তি সাধারণত Unoccupied থাকে।</li></ul></p><p>সুতরাং, 'Indolent' এর সমার্থক শব্দ হলো 'Unoccupied' (অলস/নিষ্ক্রিয়)।</p>",
+        },
+        {
+          id: 44,
+          question: "Choose the synonym of the following words INFRINGE -",
+          options: {
+            a: "Transgress",
+            b: "Purloin",
+            c: "Invade",
+            d: "Intrude",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'INFRINGE' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Infringe:</b> এর অর্থ হলো লঙ্ঘন করা, ভঙ্গ করা বা অতিক্রম করা (যেমন আইন, চুক্তি বা অধিকার)।</li><li><b>Transgress:</b> এর অর্থ হলো লঙ্ঘন করা, সীমা অতিক্রম করা বা অন্যায় করা। এটি 'Infringe' এর একটি সঠিক সমার্থক শব্দ।</li><li><b>Purloin:</b> এর অর্থ হলো চুরি করা।</li><li><b>Invade:</b> এর অর্থ হলো আক্রমণ করা বা অনধিকার প্রবেশ করা।</li><li><b>Intrude:</b> এর অর্থ হলো অনধিকার প্রবেশ করা বা হস্তক্ষেপ করা।</li></ul></p><p>যদিও 'Invade' এবং 'Intrude' কিছুটা কাছাকাছি অর্থ প্রকাশ করতে পারে, তবে 'Infringe' এর সবচেয়ে উপযুক্ত সমার্থক শব্দ হলো 'Transgress', যা নিয়ম বা অধিকার লঙ্ঘনের নির্দিষ্ট অর্থকে বোঝায়।</p>",
+        },
+        {
+          id: 45,
+          question: "ILLUSIVE means -",
+          options: {
+            a: "Not deceptive",
+            b: "Not certain",
+            c: "Not obvious",
+            d: "Not coherent",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'ILLUSIVE' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Illusive:</b> এর অর্থ হলো মায়াবী, প্রতারণামূলক বা যা সহজে ধরা যায় না বা পাওয়া যায় না। এটি এমন কিছুকে বোঝায় যা বাস্তব বলে মনে হলেও আসলে তা নয়, অথবা যা সহজে বোঝা যায় না।</li><li><b>Not deceptive:</b> এর অর্থ হলো প্রতারণামূলক নয়। এটি 'Illusive' এর Antonym।</li><li><b>Not certain:</b> এর অর্থ হলো নিশ্চিত নয় বা অনিশ্চিত। 'Illusive' প্রায়শই অনিশ্চিত বা অস্পষ্ট বিষয়কে বোঝায়।</li><li><b>Not obvious:</b> এর অর্থ হলো স্পষ্ট নয় বা সহজে বোঝা যায় না। 'Illusive' এর অর্থ 'not obvious' বা 'elusive' এর কাছাকাছি হতে পারে।</li><li><b>Not coherent:</b> এর অর্থ হলো সুসংগত নয় বা অস্পষ্ট।</li></ul></p><p>'Illusive' বলতে এমন কিছু বোঝায় যা সহজে পাওয়া যায় না বা যা স্পষ্ট নয়, তাই 'Not certain' (নিশ্চিত নয়) বা 'Not obvious' (স্পষ্ট নয়) উভয়ই উপযুক্ত হতে পারে। তবে 'illusive' এর মূল অর্থ হলো যা মায়াময় বা প্রতারণামূলক, যা প্রায়শই অনিশ্চিত প্রকৃতির হয়। 'Not certain' একটি ভালো বিকল্প।</p>",
+        },
+        {
+          id: 46,
+          question: "The antonym for 'Inimical' -",
+          options: {
+            a: "Hostile",
+            b: "Friendly",
+            c: "Indifferent",
+            d: "Angry",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে 'Inimical' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Inimical:</b> এর অর্থ হলো প্রতিকূল, ক্ষতিকর বা শত্রুভাবাপন্ন।</li><li><b>Hostile:</b> এর অর্থ হলো শত্রুভাবাপন্ন বা প্রতিকূল। এটি 'Inimical' এর Synonym।</li><li><b>Friendly:</b> এর অর্থ হলো বন্ধুত্বপূর্ণ বা অনুকূল। এটি 'Inimical' (শত্রুভাবাপন্ন) এর সরাসরি বিপরীত।</li><li><b>Indifferent:</b> এর অর্থ হলো উদাসীন বা অনীহা।</li><li><b>Angry:</b> এর অর্থ হলো রাগান্বিত।</li></ul></p><p>সুতরাং, 'Inimical' এর বিপরীত শব্দ হলো 'Friendly' (বন্ধুত্বপূর্ণ)।</p>",
+        },
+        {
+          id: 47,
+          question: "The word 'Imbibe' means -",
+          options: {
+            a: "To learn",
+            b: "To tinge",
+            c: "To drink",
+            d: "To acquire",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Imbibe' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Imbibe:</b> এর অর্থ হলো পান করা, শোষণ করা বা জ্ঞান গ্রহণ করা। তবে এর প্রাথমিক অর্থ হলো তরল পান করা।</li><li><b>To learn:</b> এর অর্থ হলো শেখা। এটি 'Imbibe' এর একটি গৌণ অর্থ হতে পারে যখন জ্ঞান বা ধারণা গ্রহণ করা বোঝায়।</li><li><b>To tinge:</b> এর অর্থ হলো রঙ করা বা রঞ্জিত করা।</li><li><b>To drink:</b> এর অর্থ হলো পান করা। এটি 'Imbibe' এর সরাসরি এবং সবচেয়ে সাধারণ অর্থ।</li><li><b>To acquire:</b> এর অর্থ হলো অর্জন করা বা লাভ করা।</li></ul></p><p>সুতরাং, 'Imbibe' এর মূল অর্থ হলো 'To drink' (পান করা)।</p>",
+        },
+        {
+          id: 48,
+          question: "What is the correct antonym for 'INDIFFERENT'?",
+          options: {
+            a: "Interested",
+            b: "Detached",
+            c: "Sleepy",
+            d: "Different",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'INDIFFERENT' শব্দের Antonym (বিপরীত শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Indifferent:</b> এর অর্থ হলো উদাসীন, অনীহা বা আগ্রহহীনতা।</li><li><b>Interested:</b> এর অর্থ হলো আগ্রহী বা কৌতূহলী। এটি 'Indifferent' (উদাসীন) এর সরাসরি বিপরীত।</li><li><b>Detached:</b> এর অর্থ হলো বিচ্ছিন্ন বা অনাসক্ত। এটি 'Indifferent' এর কাছাকাছি অর্থ প্রকাশ করে, কিন্তু বিপরীত নয়।</li><li><b>Sleepy:</b> এর অর্থ হলো ঘুমন্ত বা তন্দ্রাচ্ছন্ন।</li><li><b>Different:</b> এর অর্থ হলো ভিন্ন।</li></ul></p><p>সুতরাং, 'INDIFFERENT' এর বিপরীত শব্দ হলো 'Interested' (আগ্রহী)।</p>",
+        },
+        {
+          id: 49,
+          question: "Intellectual মানে কী?",
+          options: {
+            a: "বুদ্ধিমান",
+            b: "মননশীল",
+            c: "বুদ্ধিজীবী",
+            d: "মেধাবী",
+          },
+          correct: "c",
+          explanation:
+            "<p>এখানে 'Intellectual' শব্দের বাংলা অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Intellectual:</b> এর অর্থ হলো বুদ্ধিজীবী। এটি এমন ব্যক্তিকে বোঝায় যিনি উচ্চতর মানসিক ক্ষমতা এবং জ্ঞান চর্চায় নিযুক্ত থাকেন।</li><li><b>বুদ্ধিমান:</b> (Intelligent) এর অর্থ হলো বুদ্ধি বা জ্ঞানসম্পন্ন।</li><li><b>মননশীল:</b> (Thoughtful/Contemplative) এর অর্থ হলো গভীর চিন্তাভাবনা করা।</li><li><b>বুদ্ধিজীবী:</b> (Intellectual) এটি 'Intellectual' শব্দের সরাসরি বাংলা প্রতিশব্দ।</li><li><b>মেধাবী:</b> (Talented/Brilliant) এর অর্থ হলো জন্মগত প্রতিভা বা বিশেষ দক্ষতা সম্পন্ন।</li></ul></p><p>সুতরাং, 'Intellectual' মানে হলো 'বুদ্ধিজীবী'।</p>",
+        },
+        {
+          id: 50,
+          question: "What is the meaning of the word 'Intrepid'?",
+          options: {
+            a: "Arrogant",
+            b: "Belligerent",
+            c: "Questioning",
+            d: "Fearless",
+          },
+          correct: "d",
+          explanation:
+            "<p>এখানে 'Intrepid' শব্দের অর্থ জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Intrepid:</b> এর অর্থ হলো নির্ভীক, দুঃসাহসী বা অকুতোভয়।</li><li><b>Arrogant:</b> এর অর্থ হলো দাম্ভিক বা অহংকারী।</li><li><b>Belligerent:</b> এর অর্থ হলো যুদ্ধংদেহী বা কলহপ্রিয়।</li><li><b>Questioning:</b> এর অর্থ হলো প্রশ্নকারী বা সন্দিহান।</li><li><b>Fearless:</b> এর অর্থ হলো নির্ভীক বা ভয়হীন। এটি 'Intrepid' এর একটি সঠিক অর্থ।</li></ul></p><p>সুতরাং, 'Intrepid' মানে হলো 'Fearless' (নির্ভীক)।</p>",
+        },
+        {
+          id: 51,
+          question: "What is the synonym of 'Incite'?",
+          options: {
+            a: "Instigate",
+            b: "Permit",
+            c: "Urge",
+            d: "Deceive",
+          },
+          correct: "a",
+          explanation:
+            "<p>এখানে 'Incite' শব্দের Synonym (সমার্থক শব্দ) জানতে চাওয়া হয়েছে।</p><p><ul><li><b>Incite:</b> এর অর্থ হলো প্ররোচিত করা, উত্তেজিত করা বা উস্কানি দেওয়া। এটি সাধারণত নেতিবাচক অর্থে ব্যবহৃত হয় যখন কাউকে কোনো খারাপ কাজ বা দাঙ্গা করতে উৎসাহিত করা হয়।</li><li><b>Instigate:</b> এর অর্থ হলো প্ররোচিত করা, উস্কানি দেওয়া বা শুরু করতে উৎসাহিত করা। এটি 'Incite' এর একটি সঠিক সমার্থক শব্দ, বিশেষ করে যখন কোনো বিবাদ বা খারাপ কাজ শুরু করতে প্ররোচিত করা হয়।</li><li><b>Permit:</b> এর অর্থ হলো অনুমতি দেওয়া।</li><li><b>Urge:</b> এর অর্থ হলো অনুরোধ করা বা উৎসাহিত করা। 'Urge' ইতিবাচক বা নেতিবাচক উভয় অর্থেই ব্যবহৃত হতে পারে, তবে 'Incite' এর মতো তীব্র উস্কানি বোঝায় না।</li><li><b>Deceive:</b> এর অর্থ হলো প্রতারণা করা বা ঠকানো।</li></ul></p><p>সুতরাং, 'Incite' এর সমার্থক শব্দ হলো 'Instigate' (প্ররোচিত করা)।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
